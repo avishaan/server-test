@@ -3,11 +3,14 @@ var express = require('express');
 var path = require('path');
 var cookieParser = require('cookie-parser');
 var logger = require('morgan');
+var mongoose = require('mongoose');
 
 var indexRouter = require('./routes/index');
 var usersRouter = require('./routes/users');
 
 var app = express();
+
+var mongoDB = 'mongodb://test:test@10.0.1.112:27017/test?authSource=admin';
 
 // view engine setup
 app.set('views', path.join(__dirname, 'views'));
@@ -36,6 +39,33 @@ app.use(function(err, req, res, next) {
   // render the error page
   res.status(err.status || 500);
   res.render('error');
+});
+
+mongoose.connect(mongoDB);
+//Get Mongoose to use the global promise library
+mongoose.Promise = global.Promise;
+//Get the default connection
+var db = mongoose.connection;
+
+//Bind connection to error event (to get notification of connection errors)
+db.on('error', console.error.bind(console, 'MongoDB connection error:'));
+//connect event
+db.once('open',function(){
+	console.log('MongoDB connected');
+	var testSchema = mongoose.Schema({
+		name: String,
+		time: Date
+	});
+	var Test = mongoose.model('Test', testSchema);
+	new Test({
+		name: 'DB connected',
+		time: Date.now()
+	}).save(function (err, doc){
+		if (err) return console.error(err);
+		console.log('success adding record');
+		console.log(doc.toString());
+	});
+	
 });
 
 module.exports = app;
